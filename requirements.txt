@@ -1,0 +1,4 @@
+gtsam>=4.3.0
+numpy>=2.0
+pandas>=3.0
+pytest>=9.0
