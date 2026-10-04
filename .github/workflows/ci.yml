@@ -1,4 +1,4 @@
-name: Mapping Accuracy Verification CI
+name: Mapping System Test Suite
 
 on:
   push:
@@ -16,8 +16,6 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: |
-          pip install numpy scipy pandas pytest
-      - name: Run 30mm Accuracy Test
-        run: |
-          python3 -m pytest tests/test_accuracy.py -v -s
+        run: pip install -r requirements.txt
+      - name: Run test suite
+        run: python3 -m pytest -v
