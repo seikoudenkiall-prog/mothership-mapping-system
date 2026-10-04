@@ -13,6 +13,7 @@ class _Agent:
     mode: str = "scan"
     covariance: float = 0.001
     hop_count: int = 0
+    distance_travelled: float = 0.0
     samples: dict = field(default_factory=dict)
 
 
@@ -48,12 +49,14 @@ def _safe_step(position, goal, other_positions, safety_distance, step_size):
 
 
 def run_multi_agent_simulation(agent_count=2, safety_distance=1.5, seed=42,
-                               max_steps=5000):
+                               max_steps=5000, step_duration_s=0.1):
     """Simulate cooperative scanning; one agent is supported as a timing baseline."""
     if agent_count < 1:
         raise ValueError("agent_count must be at least 1")
     if safety_distance <= 0:
         raise ValueError("safety_distance must be positive")
+    if not np.isfinite(step_duration_s) or step_duration_s <= 0:
+        raise ValueError("step_duration_s must be positive and finite")
 
     rng = np.random.default_rng(seed)
     obstacles = [
@@ -117,6 +120,7 @@ def run_multi_agent_simulation(agent_count=2, safety_distance=1.5, seed=42,
                 safety_distance, 0.3,
             )
             displacement = agent.position - previous_position
+            agent.distance_travelled += float(np.linalg.norm(displacement))
             agent.estimate += displacement + rng.normal(0.0, 0.0015, size=3)
 
             if agent.mode == "hop" and agent.position[2] >= 2.15:
@@ -168,6 +172,10 @@ def run_multi_agent_simulation(agent_count=2, safety_distance=1.5, seed=42,
     return {
         "errors": pd.DataFrame(errors, columns=["point", "xy", "z", "3d"]),
         "elapsed_steps": elapsed_steps,
+        "elapsed_time_s": elapsed_steps * step_duration_s,
+        "step_duration_s": step_duration_s,
+        "distance_by_agent_m": [agent.distance_travelled for agent in agents],
+        "total_distance_m": sum(agent.distance_travelled for agent in agents),
         "min_separation": min_separation,
         "hop_counts": [agent.hop_count for agent in agents],
         "scan_complete": len(errors) == sum(map(len, assignments)),
